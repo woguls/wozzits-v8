@@ -10,6 +10,10 @@
       "name": "ninja-debug",
       "displayName": "Ninja Debug",
       "generator": "Ninja",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
       "binaryDir": "${sourceDir}/build/ninja-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
@@ -21,6 +25,10 @@
       "name": "ninja-release",
       "displayName": "Ninja Release",
       "generator": "Ninja",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
       "binaryDir": "${sourceDir}/build/ninja-release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",

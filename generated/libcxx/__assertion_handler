@@ -1,0 +1,5 @@
+#pragma once
+
+#include <stdlib.h>
+
+#define _LIBCPP_ASSERTION_HANDLER(message) abort()
