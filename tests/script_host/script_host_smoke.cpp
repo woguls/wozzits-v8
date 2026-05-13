@@ -1,4 +1,4 @@
-#include <wozzits/script/v8_script_host.h>
+#include <wozzits/script/script_host.h>
 
 #include <cassert>
 #include <cstdio>
@@ -6,51 +6,70 @@
 
 int main()
 {
-    auto host = wz::script::create_v8_script_host();
+    wz::script::ScriptHost* host =
+        wz::script::create_v8_script_host();
 
-    assert(host);
-    assert(host->initialize());
+    assert(host != nullptr);
+    assert(wz::script::initialize(host));
 
     {
-        const wz::script::ScriptResult result =
-            host->run_source("smoke.js", "'hello ' + 'wozzits';");
+        const wz::script::RunSourceResult result =
+            wz::script::run_source(
+                host,
+                "smoke.js",
+                "'hello ' + 'wozzits';");
 
         if (!result.ok)
         {
-            std::puts(result.error.c_str());
+            std::printf("error: %s\n", result.error ? result.error : "<null>");
+            wz::script::destroy_v8_script_host(host);
             return 1;
         }
 
-        std::printf("value='%s' len=%zu\n", result.value.c_str(), result.value.size());
-        std::puts(result.value.c_str());
-        assert(std::strcmp(result.value.c_str(), "hello wozzits") == 0);
+        std::printf(
+            "value='%s' len=%zu\n",
+            result.value ? result.value : "<null>",
+            result.value_size);
+
+        assert(result.value != nullptr);
+        assert(std::strcmp(result.value, "hello wozzits") == 0);
     }
 
     {
-        const wz::script::ScriptResult result =
-            host->run_source("math.js", "21 * 2;");
+        const wz::script::RunSourceResult result =
+            wz::script::run_source(
+                host,
+                "math.js",
+                "21 * 2;");
 
         if (!result.ok)
         {
-            std::puts(result.error.c_str());
+            std::printf("error: %s\n", result.error ? result.error : "<null>");
+            wz::script::destroy_v8_script_host(host);
             return 1;
         }
 
-        std::puts(result.value.c_str());
-        assert(std::strcmp(result.value.c_str(), "42") == 0);
+        std::printf("%s\n", result.value ? result.value : "<null>");
+
+        assert(result.value != nullptr);
+        assert(std::strcmp(result.value, "42") == 0);
     }
 
     {
-        const wz::script::ScriptResult result =
-            host->run_source("error.js", "throw new Error('intentional failure');");
+        const wz::script::RunSourceResult result =
+            wz::script::run_source(
+                host,
+                "error.js",
+                "throw new Error('intentional failure');");
 
         assert(!result.ok);
-        assert(result.error.c_str() != nullptr);
-        assert(std::strlen(result.error.c_str()) > 0);
-        std::printf("Captured expected error: %s\n", result.error.c_str());
+        assert(result.error != nullptr);
+        assert(std::strlen(result.error) > 0);
+
+        std::printf("Captured expected error: %s\n", result.error);
     }
 
-    host->shutdown();
+    wz::script::destroy_v8_script_host(host);
 
     return 0;
 }

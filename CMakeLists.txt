@@ -38,9 +38,9 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 find_package(V8 REQUIRED)
 
 add_library(wozzits_v8 STATIC
-    include/wozzits/script/script_result.h
+    
     include/wozzits/script/script_host.h
-    include/wozzits/script/v8_script_host.h
+    
 
     src/v8_script_host.cpp
 )
