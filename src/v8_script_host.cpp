@@ -244,7 +244,7 @@ namespace wz::script
         host->last_value.clear();
         host->last_error.clear();
         host->logs.clear();
-        host->tools.text_panels.clear();
+        host->tools.pending_text_panels.clear();
 
         host->initialized = false;
     }

@@ -50,6 +50,32 @@ namespace
 
         wz::script::clear_logs(host);
     }
+
+    void drain_pending_text_panels(wz::script::ScriptHost* host)
+    {
+        const std::size_t count =
+            wz::script::pending_text_panel_count(host);
+
+        for (std::size_t i = 0; i < count; ++i)
+        {
+            std::size_t title_size = 0;
+            const char* title =
+                wz::script::pending_text_panel_title(host, i, &title_size);
+
+            std::size_t text_size = 0;
+            const char* text =
+                wz::script::pending_text_panel_text(host, i, &text_size);
+
+            std::printf(
+                "[tool panel] %.*s: %.*s\n",
+                static_cast<int>(title_size),
+                title ? title : "",
+                static_cast<int>(text_size),
+                text ? text : "");
+        }
+
+        wz::script::clear_pending_text_panels(host);
+    }
 }
 
 int main()
@@ -75,6 +101,7 @@ int main()
         scripts,
         "startup.js",
         "wz.log('script system online');"
+        "wz.tool.textPanel('Startup', 'Script system online');"
         "'startup complete';"))
     {
         wz::script::destroy_v8_script_host(scripts);
@@ -101,6 +128,7 @@ int main()
         }
 
         drain_script_logs(scripts);
+        drain_pending_text_panels(scripts);
     }
 
     // Pretend this is engine shutdown.

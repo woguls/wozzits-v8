@@ -22,7 +22,7 @@ namespace wz::script
 
     struct ScriptToolState
     {
-        std::vector<ScriptTextPanel> text_panels;
+        std::vector<ScriptTextPanel> pending_text_panels;
     };
 
     struct ScriptHost

@@ -38,29 +38,29 @@ namespace wz::script::internal
         if (args.Length() > 1)
             panel.text = to_string(isolate, context, args[1]);
 
-        host->tools.text_panels.push_back(std::move(panel));
+        host->tools.pending_text_panels.push_back(std::move(panel));
     }
 }
 
 namespace wz::script
 {
-    void clear_text_panels(ScriptHost* host)
+    void clear_pending_text_panels(ScriptHost* host)
     {
         if (host == nullptr)
             return;
 
-        host->tools.text_panels.clear();
+        host->tools.pending_text_panels.clear();
     }
 
-    std::size_t text_panel_count(const ScriptHost* host)
+    std::size_t pending_text_panel_count(const ScriptHost* host)
     {
         if (host == nullptr)
             return 0;
 
-        return host->tools.text_panels.size();
+        return host->tools.pending_text_panels.size();
     }
 
-    const char* text_panel_title(
+    const char* pending_text_panel_title(
         const ScriptHost* host,
         std::size_t index,
         std::size_t* out_size)
@@ -71,11 +71,11 @@ namespace wz::script
         if (host == nullptr)
             return nullptr;
 
-        if (index >= host->tools.text_panels.size())
+        if (index >= host->tools.pending_text_panels.size())
             return nullptr;
 
         const std::string& title =
-            host->tools.text_panels[index].title;
+            host->tools.pending_text_panels[index].title;
 
         if (out_size != nullptr)
             *out_size = title.size();
@@ -83,7 +83,7 @@ namespace wz::script
         return title.c_str();
     }
 
-    const char* text_panel_text(
+    const char* pending_text_panel_text(
         const ScriptHost* host,
         std::size_t index,
         std::size_t* out_size)
@@ -94,11 +94,11 @@ namespace wz::script
         if (host == nullptr)
             return nullptr;
 
-        if (index >= host->tools.text_panels.size())
+        if (index >= host->tools.pending_text_panels.size())
             return nullptr;
 
         const std::string& text =
-            host->tools.text_panels[index].text;
+            host->tools.pending_text_panels[index].text;
 
         if (out_size != nullptr)
             *out_size = text.size();

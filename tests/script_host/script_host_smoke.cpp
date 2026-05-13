@@ -104,7 +104,7 @@ int main()
     }
 
     {
-        wz::script::clear_text_panels(host);
+        wz::script::clear_pending_text_panels(host);
 
         const wz::script::RunSourceResult result =
             wz::script::run_source(
@@ -122,15 +122,15 @@ int main()
         assert(result.value != nullptr);
         assert(std::strcmp(result.value, "panel created") == 0);
 
-        assert(wz::script::text_panel_count(host) == 1);
+        assert(wz::script::pending_text_panel_count(host) == 1);
 
         std::size_t title_size = 0;
         const char* title =
-            wz::script::text_panel_title(host, 0, &title_size);
+            wz::script::pending_text_panel_title(host, 0, &title_size);
 
         std::size_t text_size = 0;
         const char* text =
-            wz::script::text_panel_text(host, 0, &text_size);
+            wz::script::pending_text_panel_text(host, 0, &text_size);
 
         assert(title != nullptr);
         assert(text != nullptr);
