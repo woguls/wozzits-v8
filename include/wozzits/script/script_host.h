@@ -1,6 +1,4 @@
 #pragma once
-// include/wozzits/script/script_host.h
-
 
 #include <cstddef>
 
@@ -10,7 +8,6 @@ namespace wz::script
 
     struct RunSourceResult
     {
-        // RunSourceResult.value/error remain valid until the next run_source() call or host destruction.
         bool ok = false;
 
         const char* value = nullptr;
@@ -30,4 +27,12 @@ namespace wz::script
         ScriptHost* host,
         const char* name,
         const char* source);
+
+    void clear_logs(ScriptHost* host);
+    std::size_t log_count(const ScriptHost* host);
+
+    const char* log_message(
+        const ScriptHost* host,
+        std::size_t index,
+        std::size_t* out_size);
 }

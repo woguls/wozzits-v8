@@ -11,12 +11,16 @@
 #include <v8-local-handle.h>
 #include <v8-primitive.h>
 #include <v8-script.h>
+#include <v8-external.h>
+#include <v8-function.h>
+#include <v8-template.h>
 
 #include <cassert>
 #include <cstdio>
 #include <cstring>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace wz::script
 {
@@ -29,10 +33,10 @@ namespace wz::script
         v8::Isolate* isolate = nullptr;
         v8::Global<v8::Context> context;
 
-        // Owned result storage. Returned RunSourceResult pointers remain valid
-        // until the next run_source() call, shutdown(), or destroy_v8_script_host().
         std::string last_value;
         std::string last_error;
+
+        std::vector<std::string> logs;
     };
 }
 
@@ -93,6 +97,34 @@ namespace
         }
 
         return make_string("V8 error");
+    }
+
+    void wz_log_callback(const v8::FunctionCallbackInfo<v8::Value>& args)
+    {
+        v8::Isolate* isolate = args.GetIsolate();
+
+        if (args.Data().IsEmpty() || !args.Data()->IsExternal())
+            return;
+
+        v8::Local<v8::External> external =
+            v8::Local<v8::External>::Cast(args.Data());
+
+        auto* host =
+            static_cast<wz::script::ScriptHost*>(
+                external->Value(v8::kExternalPointerTypeTagDefault));
+
+        if (host == nullptr)
+            return;
+
+        v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+        if (args.Length() <= 0)
+        {
+            host->logs.emplace_back();
+            return;
+        }
+
+        host->logs.push_back(to_string(isolate, context, args[0]));
     }
 
     wz::script::RunSourceResult make_value_result(
@@ -173,8 +205,39 @@ namespace wz::script
             v8::Isolate::Scope isolate_scope(host->isolate);
             v8::HandleScope handle_scope(host->isolate);
 
+            v8::Local<v8::ObjectTemplate> global_template =
+                v8::ObjectTemplate::New(host->isolate);
+
+            v8::Local<v8::ObjectTemplate> wz_template =
+                v8::ObjectTemplate::New(host->isolate);
+
+            v8::Local<v8::External> host_external =
+                v8::External::New(
+                    host->isolate,
+                    host,
+                    v8::kExternalPointerTypeTagDefault);
+
+            v8::Local<v8::FunctionTemplate> log_function =
+                v8::FunctionTemplate::New(
+                    host->isolate,
+                    wz_log_callback,
+                    host_external);
+
+            v8::Local<v8::String> log_name =
+                v8::String::NewFromUtf8Literal(host->isolate, "log");
+
+            wz_template->Set(log_name, log_function);
+
+            v8::Local<v8::String> wz_name =
+                v8::String::NewFromUtf8Literal(host->isolate, "wz");
+
+            global_template->Set(wz_name, wz_template);
+
             v8::Local<v8::Context> local_context =
-                v8::Context::New(host->isolate);
+                v8::Context::New(
+                    host->isolate,
+                    nullptr,
+                    global_template);
 
             host->context.Reset(host->isolate, local_context);
         }
@@ -206,6 +269,7 @@ namespace wz::script
 
         host->last_value.clear();
         host->last_error.clear();
+        host->logs.clear();
 
         host->initialized = false;
     }
@@ -313,4 +377,42 @@ namespace wz::script
 
         return make_value_result(host);
     }
-}
+
+    void clear_logs(ScriptHost* host)
+    {
+        if (host == nullptr)
+            return;
+
+        host->logs.clear();
+    }
+
+    std::size_t log_count(const ScriptHost* host)
+    {
+        if (host == nullptr)
+            return 0;
+
+        return host->logs.size();
+    }
+
+    const char* log_message(
+        const ScriptHost* host,
+        std::size_t index,
+        std::size_t* out_size)
+    {
+        if (out_size != nullptr)
+            *out_size = 0;
+
+        if (host == nullptr)
+            return nullptr;
+
+        if (index >= host->logs.size())
+            return nullptr;
+
+        const std::string& message = host->logs[index];
+
+        if (out_size != nullptr)
+            *out_size = message.size();
+
+        return message.c_str();
+    }
+} // namespace wz::script

@@ -56,6 +56,40 @@ int main()
     }
 
     {
+        wz::script::clear_logs(host);
+
+        const wz::script::RunSourceResult result =
+            wz::script::run_source(
+                host,
+                "log.js",
+                "wz.log('hello from js'); 'logged';");
+
+        if (!result.ok)
+        {
+            std::printf("error: %s\n", result.error ? result.error : "<null>");
+            wz::script::destroy_v8_script_host(host);
+            return 1;
+        }
+
+        assert(result.value != nullptr);
+        assert(std::strcmp(result.value, "logged") == 0);
+
+        assert(wz::script::log_count(host) == 1);
+
+        std::size_t message_size = 0;
+        const char* message =
+            wz::script::log_message(host, 0, &message_size);
+
+        assert(message != nullptr);
+        assert(std::strcmp(message, "hello from js") == 0);
+
+        std::printf(
+            "Captured log: %s len=%zu\n",
+            message,
+            message_size);
+    }
+
+    {
         const wz::script::RunSourceResult result =
             wz::script::run_source(
                 host,
