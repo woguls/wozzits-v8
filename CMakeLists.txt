@@ -115,3 +115,31 @@ if(WOZZITS_V8_BUILD_TESTS)
 
     add_test(NAME script_host_smoke COMMAND script_host_smoke)
 endif()
+
+if(WOZZITS_V8_BUILD_EXAMPLES)
+    add_executable(engine_style_integration
+        examples/engine_style_integration.cpp
+    )
+
+    target_link_libraries(engine_style_integration
+        PRIVATE
+            wozzits_v8::wozzits_v8
+    )
+
+    target_compile_features(engine_style_integration PRIVATE cxx_std_20)
+
+    if(MSVC)
+        target_compile_options(engine_style_integration
+            PRIVATE
+                /Zc:__cplusplus
+        )
+    endif()
+
+    if(WOZZITS_V8_BUILD_TESTS)
+        add_test(
+            NAME engine_style_integration
+            COMMAND engine_style_integration)
+    endif()
+
+
+endif()

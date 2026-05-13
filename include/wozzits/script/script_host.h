@@ -10,9 +10,14 @@ namespace wz::script
     {
         bool ok = false;
 
+        // Points to ScriptHost-owned storage.
+        // Valid until the next run_source(), clear/shutdown, or destroy_v8_script_host().
         const char* value = nullptr;
         std::size_t value_size = 0;
 
+        // Points to ScriptHost-owned storage, unless the host pointer passed to
+        // run_source() was null. Valid until the next run_source(), clear/shutdown,
+        // or destroy_v8_script_host().
         const char* error = nullptr;
         std::size_t error_size = 0;
     };
@@ -29,8 +34,12 @@ namespace wz::script
         const char* source);
 
     void clear_logs(ScriptHost* host);
+
     std::size_t log_count(const ScriptHost* host);
 
+    // Returns a pointer to ScriptHost-owned log storage.
+    // Valid until clear_logs(), shutdown(), destroy_v8_script_host(),
+    // or until future API changes introduce log compaction/removal.
     const char* log_message(
         const ScriptHost* host,
         std::size_t index,
