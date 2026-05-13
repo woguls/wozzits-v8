@@ -103,6 +103,52 @@ int main()
         std::printf("Captured expected error: %s\n", result.error);
     }
 
+    {
+        wz::script::clear_text_panels(host);
+
+        const wz::script::RunSourceResult result =
+            wz::script::run_source(
+                host,
+                "tool_text_panel.js",
+                "wz.tool.textPanel('Hello', 'Hello from JS'); 'panel created';");
+
+        if (!result.ok)
+        {
+            std::printf("error: %s\n", result.error ? result.error : "<null>");
+            wz::script::destroy_v8_script_host(host);
+            return 1;
+        }
+
+        assert(result.value != nullptr);
+        assert(std::strcmp(result.value, "panel created") == 0);
+
+        assert(wz::script::text_panel_count(host) == 1);
+
+        std::size_t title_size = 0;
+        const char* title =
+            wz::script::text_panel_title(host, 0, &title_size);
+
+        std::size_t text_size = 0;
+        const char* text =
+            wz::script::text_panel_text(host, 0, &text_size);
+
+        assert(title != nullptr);
+        assert(text != nullptr);
+
+        assert(std::strcmp(title, "Hello") == 0);
+        assert(std::strcmp(text, "Hello from JS") == 0);
+
+        assert(title_size == std::strlen("Hello"));
+        assert(text_size == std::strlen("Hello from JS"));
+
+        std::printf(
+            "Captured text panel: title='%s' title_len=%zu text='%s' text_len=%zu\n",
+            title,
+            title_size,
+            text,
+            text_size);
+    }
+
     wz::script::destroy_v8_script_host(host);
 
     return 0;

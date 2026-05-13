@@ -44,4 +44,24 @@ namespace wz::script
         const ScriptHost* host,
         std::size_t index,
         std::size_t* out_size);
+
+    void clear_text_panels(ScriptHost* host);
+
+    std::size_t text_panel_count(const ScriptHost* host);
+
+    // Returns a pointer to ScriptHost-owned text panel title storage.
+    // Valid until clear_text_panels(), shutdown(), destroy_v8_script_host(),
+    // or until future API changes introduce text panel compaction/removal.
+    const char* text_panel_title(
+        const ScriptHost* host,
+        std::size_t index,
+        std::size_t* out_size);
+
+    // Returns a pointer to ScriptHost-owned text panel body storage.
+    // Valid until clear_text_panels(), shutdown(), destroy_v8_script_host(),
+    // or until future API changes introduce text panel compaction/removal.
+    const char* text_panel_text(
+        const ScriptHost* host,
+        std::size_t index,
+        std::size_t* out_size);
 }

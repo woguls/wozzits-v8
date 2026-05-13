@@ -41,8 +41,9 @@ add_library(wozzits_v8 STATIC
     
     include/wozzits/script/script_host.h
     
-
+    src/v8_script_tool_panels.cpp
     src/v8_script_host.cpp
+    src/v8_script_log.cpp
 )
 
 add_library(wozzits_v8::wozzits_v8 ALIAS wozzits_v8)
