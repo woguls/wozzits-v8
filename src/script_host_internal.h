@@ -15,31 +15,31 @@ namespace wz::script
 {
     struct ScriptTextPanel
     {
-        std::string title;
-        std::string text;
+        std::vector<char> title;
+        std::vector<char> text;
     };
 
     struct ScriptStatsRow
     {
-        std::string label;
-        std::string value;
+        std::vector<char> label;
+        std::vector<char> value;
     };
 
     struct ScriptStatsPanel
     {
-        std::string title;
+        std::vector<char> title;
         std::vector<ScriptStatsRow> rows;
     };
 
     struct ScriptButtonItem
     {
-        std::string label;
-        std::string action;
+        std::vector<char> label;
+        std::vector<char> action;
     };
 
     struct ScriptButtonPanel
     {
-        std::string title;
+        std::vector<char> title;
         std::vector<ScriptButtonItem> buttons;
     };
 
@@ -61,7 +61,7 @@ namespace wz::script
         std::string last_value;
         std::string last_error;
 
-        std::vector<std::string> logs;
+        std::vector<std::vector<char>> logs;
         ScriptToolState tools;
     };
 }
@@ -71,6 +71,11 @@ namespace wz::script::internal
     std::string make_string(const char* text);
 
     std::string to_string(
+        v8::Isolate* isolate,
+        v8::Local<v8::Context> context,
+        v8::Local<v8::Value> value);
+
+    std::vector<char> to_bytes(
         v8::Isolate* isolate,
         v8::Local<v8::Context> context,
         v8::Local<v8::Value> value);

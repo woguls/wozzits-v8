@@ -32,7 +32,7 @@ namespace wz::script::internal
         ScriptButtonPanel panel{};
 
         if (args.Length() > 0)
-            panel.title = to_string(isolate, context, args[0]);
+            panel.title = to_bytes(isolate, context, args[0]);
 
         if (args.Length() > 1 && args[1]->IsArray())
         {
@@ -57,11 +57,11 @@ namespace wz::script::internal
 
                 v8::Local<v8::Value> label_val;
                 if (btn->Get(context, 0).ToLocal(&label_val))
-                    item.label = to_string(isolate, context, label_val);
+                    item.label = to_bytes(isolate, context, label_val);
 
                 v8::Local<v8::Value> action_val;
                 if (btn->Get(context, 1).ToLocal(&action_val))
-                    item.action = to_string(isolate, context, action_val);
+                    item.action = to_bytes(isolate, context, action_val);
 
                 panel.buttons.push_back(std::move(item));
             }
@@ -103,13 +103,16 @@ namespace wz::script
         if (index >= host->tools.pending_button_panels.size())
             return nullptr;
 
-        const std::string& title =
+        const std::vector<char>& title =
             host->tools.pending_button_panels[index].title;
 
-        if (out_size != nullptr)
-            *out_size = title.size();
+        if (title.empty())
+            return nullptr;
 
-        return title.c_str();
+        if (out_size != nullptr)
+            *out_size = title.size() - 1;
+
+        return title.data();
     }
 
     std::size_t pending_button_panel_button_count(
@@ -146,12 +149,15 @@ namespace wz::script
         if (button_index >= buttons.size())
             return nullptr;
 
-        const std::string& label = buttons[button_index].label;
+        const std::vector<char>& label = buttons[button_index].label;
+
+        if (label.empty())
+            return nullptr;
 
         if (out_size != nullptr)
-            *out_size = label.size();
+            *out_size = label.size() - 1;
 
-        return label.c_str();
+        return label.data();
     }
 
     const char* pending_button_panel_button_action(
@@ -175,11 +181,14 @@ namespace wz::script
         if (button_index >= buttons.size())
             return nullptr;
 
-        const std::string& action = buttons[button_index].action;
+        const std::vector<char>& action = buttons[button_index].action;
+
+        if (action.empty())
+            return nullptr;
 
         if (out_size != nullptr)
-            *out_size = action.size();
+            *out_size = action.size() - 1;
 
-        return action.c_str();
+        return action.data();
     }
 }

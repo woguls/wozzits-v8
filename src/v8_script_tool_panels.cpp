@@ -33,10 +33,10 @@ namespace wz::script::internal
         ScriptTextPanel panel{};
 
         if (args.Length() > 0)
-            panel.title = to_string(isolate, context, args[0]);
+            panel.title = to_bytes(isolate, context, args[0]);
 
         if (args.Length() > 1)
-            panel.text = to_string(isolate, context, args[1]);
+            panel.text = to_bytes(isolate, context, args[1]);
 
         host->tools.pending_text_panels.push_back(std::move(panel));
     }
@@ -74,13 +74,16 @@ namespace wz::script
         if (index >= host->tools.pending_text_panels.size())
             return nullptr;
 
-        const std::string& title =
+        const std::vector<char>& title =
             host->tools.pending_text_panels[index].title;
 
-        if (out_size != nullptr)
-            *out_size = title.size();
+        if (title.empty())
+            return nullptr;
 
-        return title.c_str();
+        if (out_size != nullptr)
+            *out_size = title.size() - 1;
+
+        return title.data();
     }
 
     const char* pending_text_panel_text(
@@ -97,12 +100,15 @@ namespace wz::script
         if (index >= host->tools.pending_text_panels.size())
             return nullptr;
 
-        const std::string& text =
+        const std::vector<char>& text =
             host->tools.pending_text_panels[index].text;
 
-        if (out_size != nullptr)
-            *out_size = text.size();
+        if (text.empty())
+            return nullptr;
 
-        return text.c_str();
+        if (out_size != nullptr)
+            *out_size = text.size() - 1;
+
+        return text.data();
     }
 }

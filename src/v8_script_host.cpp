@@ -56,15 +56,46 @@ namespace wz::script::internal
         if (!value->ToString(context).ToLocal(&str))
             return {};
 
-        v8::String::Utf8Value utf8(isolate, str);
-
-        if (*utf8 == nullptr || utf8.length() <= 0)
+        const size_t utf8_len = str->Utf8Length(isolate);
+        if (utf8_len == 0)
             return {};
 
-        const char* data = *utf8;
-        const size_t size = static_cast<size_t>(utf8.length());
+        // Write into a vector<char> rather than directly into std::string storage.
+        // WriteUtf8 writes raw bytes that corrupt std::string's internal size field
+        // when the string uses the libc++ Chromium ABI short-string layout
+        // (_LIBCPP_ABI_NAMESPACE=__Cr), which this translation unit inherits from
+        // V8's include paths.  std::vector always heap-allocates its buffer, so its
+        // size metadata is never adjacent to the character data and cannot be
+        // overwritten.
+        std::vector<char> buf(utf8_len + 1, '\0');
+        const size_t written = str->WriteUtf8(isolate, buf.data(), utf8_len + 1,
+                       v8::String::WriteFlags::kNullTerminate);
+        // written includes the null terminator byte; content length = written - 1.
+        const size_t content_len = (written > 0) ? written - 1 : 0;
+        return std::string(buf.data(), content_len);
+    }
 
-        return std::string(data, data + size);
+    std::vector<char> to_bytes(
+        v8::Isolate* isolate,
+        v8::Local<v8::Context> context,
+        v8::Local<v8::Value> value)
+    {
+        if (value.IsEmpty())
+            return {};
+
+        v8::Local<v8::String> str;
+
+        if (!value->ToString(context).ToLocal(&str))
+            return {};
+
+        const size_t utf8_len = str->Utf8Length(isolate);
+        if (utf8_len == 0)
+            return {};
+
+        std::vector<char> buf(utf8_len + 1, '\0');
+        str->WriteUtf8(isolate, buf.data(), utf8_len + 1,
+                       v8::String::WriteFlags::kNullTerminate);
+        return buf;
     }
 
     std::string exception_to_string(
@@ -274,11 +305,6 @@ namespace wz::script
 
         delete host->create_params.array_buffer_allocator;
         host->create_params.array_buffer_allocator = nullptr;
-
-        host->last_value.clear();
-        host->last_error.clear();
-        host->logs.clear();
-        host->tools.pending_text_panels.clear();
 
         host->initialized = false;
     }

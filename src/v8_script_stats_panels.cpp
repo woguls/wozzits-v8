@@ -32,7 +32,7 @@ namespace wz::script::internal
         ScriptStatsPanel panel{};
 
         if (args.Length() > 0)
-            panel.title = to_string(isolate, context, args[0]);
+            panel.title = to_bytes(isolate, context, args[0]);
 
         if (args.Length() > 1 && args[1]->IsArray())
         {
@@ -57,11 +57,11 @@ namespace wz::script::internal
 
                 v8::Local<v8::Value> label_val;
                 if (row->Get(context, 0).ToLocal(&label_val))
-                    entry.label = to_string(isolate, context, label_val);
+                    entry.label = to_bytes(isolate, context, label_val);
 
                 v8::Local<v8::Value> value_val;
                 if (row->Get(context, 1).ToLocal(&value_val))
-                    entry.value = to_string(isolate, context, value_val);
+                    entry.value = to_bytes(isolate, context, value_val);
 
                 panel.rows.push_back(std::move(entry));
             }
@@ -103,13 +103,16 @@ namespace wz::script
         if (index >= host->tools.pending_stats_panels.size())
             return nullptr;
 
-        const std::string& title =
+        const std::vector<char>& title =
             host->tools.pending_stats_panels[index].title;
 
-        if (out_size != nullptr)
-            *out_size = title.size();
+        if (title.empty())
+            return nullptr;
 
-        return title.c_str();
+        if (out_size != nullptr)
+            *out_size = title.size() - 1;
+
+        return title.data();
     }
 
     std::size_t pending_stats_panel_row_count(
@@ -146,12 +149,15 @@ namespace wz::script
         if (row_index >= rows.size())
             return nullptr;
 
-        const std::string& label = rows[row_index].label;
+        const std::vector<char>& label = rows[row_index].label;
+
+        if (label.empty())
+            return nullptr;
 
         if (out_size != nullptr)
-            *out_size = label.size();
+            *out_size = label.size() - 1;
 
-        return label.c_str();
+        return label.data();
     }
 
     const char* pending_stats_panel_row_value(
@@ -175,11 +181,14 @@ namespace wz::script
         if (row_index >= rows.size())
             return nullptr;
 
-        const std::string& value = rows[row_index].value;
+        const std::vector<char>& value = rows[row_index].value;
+
+        if (value.empty())
+            return nullptr;
 
         if (out_size != nullptr)
-            *out_size = value.size();
+            *out_size = value.size() - 1;
 
-        return value.c_str();
+        return value.data();
     }
 }
