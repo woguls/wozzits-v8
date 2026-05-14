@@ -9,6 +9,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+if(MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+endif()
+
 # V8 is always built in Release mode; its objects embed _ITERATOR_DEBUG_LEVEL=0.
 # Force the same value so Debug builds do not produce a linker mismatch.
 add_compile_definitions(_ITERATOR_DEBUG_LEVEL=0)
