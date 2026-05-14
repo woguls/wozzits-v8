@@ -29,9 +29,6 @@ function(wozzits_apply_v8_libcxx target)
     )
 endfunction()
 
-if(MSVC)
-   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
-endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
