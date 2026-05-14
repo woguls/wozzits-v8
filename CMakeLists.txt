@@ -9,6 +9,17 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+if(MSVC)
+    # V8 uses the static CRT (/MT) — its allocator shim overrides malloc/calloc
+    # in the static CRT and cannot be used with the DLL CRT.  Force /MT for all
+    # build types so every object in the link agrees.
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
+endif()
+
+# V8 is always built in Release mode; its objects embed _ITERATOR_DEBUG_LEVEL=0.
+# Force the same value so Debug builds do not produce a linker mismatch.
+add_compile_definitions(_ITERATOR_DEBUG_LEVEL=0)
+
 function(wozzits_apply_v8_libcxx target)
     target_include_directories(${target}
         PRIVATE
@@ -29,21 +40,20 @@ function(wozzits_apply_v8_libcxx target)
     )
 endfunction()
 
-if(MSVC)
-   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
-endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 find_package(V8 REQUIRED)
 
 add_library(wozzits_v8 STATIC
-    
+
     include/wozzits/script/script_host.h
-    
-    src/v8_script_tool_panels.cpp
+
     src/v8_script_host.cpp
     src/v8_script_log.cpp
+    src/v8_script_tool_panels.cpp
+    src/v8_script_stats_panels.cpp
+    src/v8_script_button_panels.cpp
 )
 
 add_library(wozzits_v8::wozzits_v8 ALIAS wozzits_v8)
@@ -115,6 +125,98 @@ if(WOZZITS_V8_BUILD_TESTS)
     wozzits_apply_v8_libcxx(script_host_smoke)
 
     add_test(NAME script_host_smoke COMMAND script_host_smoke)
+
+    add_executable(script_host_platform
+        tests/script_host/script_host_platform.cpp
+    )
+
+    target_link_libraries(script_host_platform
+        PRIVATE
+            wozzits_v8::wozzits_v8
+    )
+
+    target_compile_features(script_host_platform PRIVATE cxx_std_20)
+
+    if(MSVC)
+        target_compile_options(script_host_platform
+            PRIVATE
+                /std:c++20
+                /Zc:__cplusplus
+        )
+    endif()
+
+    wozzits_apply_v8_libcxx(script_host_platform)
+
+    add_test(NAME script_host_platform COMMAND script_host_platform)
+
+    add_executable(script_host_run_into
+        tests/script_host/script_host_run_into.cpp
+    )
+
+    target_link_libraries(script_host_run_into
+        PRIVATE
+            wozzits_v8::wozzits_v8
+    )
+
+    target_compile_features(script_host_run_into PRIVATE cxx_std_20)
+
+    if(MSVC)
+        target_compile_options(script_host_run_into
+            PRIVATE
+                /std:c++20
+                /Zc:__cplusplus
+        )
+    endif()
+
+    wozzits_apply_v8_libcxx(script_host_run_into)
+
+    add_test(NAME script_host_run_into COMMAND script_host_run_into)
+
+    add_executable(script_host_stats_panel
+        tests/script_host/script_host_stats_panel.cpp
+    )
+
+    target_link_libraries(script_host_stats_panel
+        PRIVATE
+            wozzits_v8::wozzits_v8
+    )
+
+    target_compile_features(script_host_stats_panel PRIVATE cxx_std_20)
+
+    if(MSVC)
+        target_compile_options(script_host_stats_panel
+            PRIVATE
+                /std:c++20
+                /Zc:__cplusplus
+        )
+    endif()
+
+    wozzits_apply_v8_libcxx(script_host_stats_panel)
+
+    add_test(NAME script_host_stats_panel COMMAND script_host_stats_panel)
+
+    add_executable(script_host_button_panel
+        tests/script_host/script_host_button_panel.cpp
+    )
+
+    target_link_libraries(script_host_button_panel
+        PRIVATE
+            wozzits_v8::wozzits_v8
+    )
+
+    target_compile_features(script_host_button_panel PRIVATE cxx_std_20)
+
+    if(MSVC)
+        target_compile_options(script_host_button_panel
+            PRIVATE
+                /std:c++20
+                /Zc:__cplusplus
+        )
+    endif()
+
+    wozzits_apply_v8_libcxx(script_host_button_panel)
+
+    add_test(NAME script_host_button_panel COMMAND script_host_button_panel)
 endif()
 
 if(WOZZITS_V8_BUILD_EXAMPLES)

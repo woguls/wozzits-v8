@@ -6,6 +6,8 @@
 
 int main()
 {
+    assert(wz::script::init_v8_platform());
+
     wz::script::ScriptHost* host =
         wz::script::create_v8_script_host();
 
@@ -150,6 +152,7 @@ int main()
     }
 
     wz::script::destroy_v8_script_host(host);
+    wz::script::shutdown_v8_platform();
 
     return 0;
 }

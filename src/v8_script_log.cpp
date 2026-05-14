@@ -33,7 +33,7 @@ namespace wz::script::internal
             return;
         }
 
-        host->logs.push_back(to_string(isolate, context, args[0]));
+        host->logs.push_back(to_bytes(isolate, context, args[0]));
     }
 }
 
@@ -69,11 +69,14 @@ namespace wz::script
         if (index >= host->logs.size())
             return nullptr;
 
-        const std::string& message = host->logs[index];
+        const std::vector<char>& message = host->logs[index];
+
+        if (message.empty())
+            return nullptr;
 
         if (out_size != nullptr)
-            *out_size = message.size();
+            *out_size = message.size() - 1;
 
-        return message.c_str();
+        return message.data();
     }
 }

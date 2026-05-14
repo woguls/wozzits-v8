@@ -18,11 +18,14 @@
 #include <cassert>
 #include <cstdio>
 #include <cstring>
+#include <memory>
 
 
 
 
-namespace wz::script::internal 
+static std::unique_ptr<v8::Platform> g_platform;
+
+namespace wz::script::internal
 {
     std::string make_string(const char* text)
     {
@@ -53,15 +56,46 @@ namespace wz::script::internal
         if (!value->ToString(context).ToLocal(&str))
             return {};
 
-        v8::String::Utf8Value utf8(isolate, str);
-
-        if (*utf8 == nullptr || utf8.length() <= 0)
+        const size_t utf8_len = str->Utf8Length(isolate);
+        if (utf8_len == 0)
             return {};
 
-        const char* data = *utf8;
-        const size_t size = static_cast<size_t>(utf8.length());
+        // Write into a vector<char> rather than directly into std::string storage.
+        // WriteUtf8 writes raw bytes that corrupt std::string's internal size field
+        // when the string uses the libc++ Chromium ABI short-string layout
+        // (_LIBCPP_ABI_NAMESPACE=__Cr), which this translation unit inherits from
+        // V8's include paths.  std::vector always heap-allocates its buffer, so its
+        // size metadata is never adjacent to the character data and cannot be
+        // overwritten.
+        std::vector<char> buf(utf8_len + 1, '\0');
+        const size_t written = str->WriteUtf8(isolate, buf.data(), utf8_len + 1,
+                       v8::String::WriteFlags::kNullTerminate);
+        // written includes the null terminator byte; content length = written - 1.
+        const size_t content_len = (written > 0) ? written - 1 : 0;
+        return std::string(buf.data(), content_len);
+    }
 
-        return std::string(data, data + size);
+    std::vector<char> to_bytes(
+        v8::Isolate* isolate,
+        v8::Local<v8::Context> context,
+        v8::Local<v8::Value> value)
+    {
+        if (value.IsEmpty())
+            return {};
+
+        v8::Local<v8::String> str;
+
+        if (!value->ToString(context).ToLocal(&str))
+            return {};
+
+        const size_t utf8_len = str->Utf8Length(isolate);
+        if (utf8_len == 0)
+            return {};
+
+        std::vector<char> buf(utf8_len + 1, '\0');
+        str->WriteUtf8(isolate, buf.data(), utf8_len + 1,
+                       v8::String::WriteFlags::kNullTerminate);
+        return buf;
     }
 
     std::string exception_to_string(
@@ -105,6 +139,34 @@ namespace wz::script::internal
 
 namespace wz::script
 {
+    bool init_v8_platform()
+    {
+        if (g_platform)
+            return true;
+
+        v8::V8::InitializeICUDefaultLocation(nullptr);
+        v8::V8::InitializeExternalStartupData(nullptr);
+
+        g_platform = v8::platform::NewDefaultPlatform();
+        if (!g_platform)
+            return false;
+
+        v8::V8::InitializePlatform(g_platform.get());
+        v8::V8::Initialize();
+
+        return true;
+    }
+
+    void shutdown_v8_platform()
+    {
+        if (!g_platform)
+            return;
+
+        v8::V8::Dispose();
+        v8::V8::DisposePlatform();
+        g_platform.reset();
+    }
+
     ScriptHost* create_v8_script_host()
     {
         return new ScriptHost();
@@ -127,16 +189,8 @@ namespace wz::script
         if (host->initialized)
             return true;
 
-        v8::V8::InitializeICUDefaultLocation(nullptr);
-        v8::V8::InitializeExternalStartupData(nullptr);
-
-        host->platform = v8::platform::NewDefaultPlatform();
-
-        if (!host->platform)
+        if (!g_platform)
             return false;
-
-        v8::V8::InitializePlatform(host->platform.get());
-        v8::V8::Initialize();
 
         host->create_params.array_buffer_allocator =
             v8::ArrayBuffer::Allocator::NewDefaultAllocator();
@@ -147,12 +201,6 @@ namespace wz::script
         {
             delete host->create_params.array_buffer_allocator;
             host->create_params.array_buffer_allocator = nullptr;
-
-            v8::V8::Dispose();
-            v8::V8::DisposePlatform();
-
-            host->platform.reset();
-
             return false;
         }
 
@@ -197,6 +245,28 @@ namespace wz::script
 
             tool_template->Set(text_panel_name, text_panel_function);
 
+            v8::Local<v8::FunctionTemplate> stats_panel_function =
+                v8::FunctionTemplate::New(
+                    host->isolate,
+                    internal::wz_tool_stats_panel_callback,
+                    host_external);
+
+            v8::Local<v8::String> stats_panel_name =
+                v8::String::NewFromUtf8Literal(host->isolate, "statsPanel");
+
+            tool_template->Set(stats_panel_name, stats_panel_function);
+
+            v8::Local<v8::FunctionTemplate> button_panel_function =
+                v8::FunctionTemplate::New(
+                    host->isolate,
+                    internal::wz_tool_button_panel_callback,
+                    host_external);
+
+            v8::Local<v8::String> button_panel_name =
+                v8::String::NewFromUtf8Literal(host->isolate, "buttonPanel");
+
+            tool_template->Set(button_panel_name, button_panel_function);
+
             v8::Local<v8::String> tool_name =
                 v8::String::NewFromUtf8Literal(host->isolate, "tool");
 
@@ -235,16 +305,6 @@ namespace wz::script
 
         delete host->create_params.array_buffer_allocator;
         host->create_params.array_buffer_allocator = nullptr;
-
-        v8::V8::Dispose();
-        v8::V8::DisposePlatform();
-
-        host->platform.reset();
-
-        host->last_value.clear();
-        host->last_error.clear();
-        host->logs.clear();
-        host->tools.pending_text_panels.clear();
 
         host->initialized = false;
     }
@@ -353,5 +413,57 @@ namespace wz::script
         return internal::make_value_result(host);
     }
 
+
+    bool run_source_into(
+        ScriptHost* host,
+        const char* name,
+        const char* source,
+        RunSourceBuffers* out)
+    {
+        if (out == nullptr)
+            return false;
+
+        const RunSourceResult result = run_source(host, name, source);
+
+        auto copy_into = [](
+            const char* src, std::size_t src_size,
+            char* dst, std::size_t capacity,
+            std::size_t& out_size, bool& out_truncated)
+        {
+            if (dst == nullptr || capacity == 0)
+            {
+                out_size = 0;
+                out_truncated = (src_size > 0);
+                return;
+            }
+
+            const std::size_t copy_size =
+                src_size < capacity ? src_size : capacity - 1;
+
+            std::memcpy(dst, src, copy_size);
+            dst[copy_size] = '\0';
+            out_size = copy_size;
+            out_truncated = (copy_size < src_size);
+        };
+
+        if (result.ok)
+        {
+            const char* src = result.value ? result.value : "";
+            const std::size_t src_size = result.value ? result.value_size : 0;
+            copy_into(src, src_size,
+                out->value, out->value_capacity,
+                out->value_size, out->value_truncated);
+        }
+        else
+        {
+            const char* src = result.error ? result.error : "";
+            const std::size_t src_size = result.error ? result.error_size : 0;
+            copy_into(src, src_size,
+                out->error, out->error_capacity,
+                out->error_size, out->error_truncated);
+        }
+
+        return result.ok;
+    }
 
 } // namespace wz::script
