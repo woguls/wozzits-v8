@@ -214,6 +214,28 @@ namespace wz::script
 
             tool_template->Set(text_panel_name, text_panel_function);
 
+            v8::Local<v8::FunctionTemplate> stats_panel_function =
+                v8::FunctionTemplate::New(
+                    host->isolate,
+                    internal::wz_tool_stats_panel_callback,
+                    host_external);
+
+            v8::Local<v8::String> stats_panel_name =
+                v8::String::NewFromUtf8Literal(host->isolate, "statsPanel");
+
+            tool_template->Set(stats_panel_name, stats_panel_function);
+
+            v8::Local<v8::FunctionTemplate> button_panel_function =
+                v8::FunctionTemplate::New(
+                    host->isolate,
+                    internal::wz_tool_button_panel_callback,
+                    host_external);
+
+            v8::Local<v8::String> button_panel_name =
+                v8::String::NewFromUtf8Literal(host->isolate, "buttonPanel");
+
+            tool_template->Set(button_panel_name, button_panel_function);
+
             v8::Local<v8::String> tool_name =
                 v8::String::NewFromUtf8Literal(host->isolate, "tool");
 

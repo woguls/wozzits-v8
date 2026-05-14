@@ -92,4 +92,59 @@ namespace wz::script
         const ScriptHost* host,
         std::size_t index,
         std::size_t* out_size);
+
+    // Stats panels — wz.tool.statsPanel(title, [[label, value], ...])
+
+    void clear_pending_stats_panels(ScriptHost* host);
+
+    std::size_t pending_stats_panel_count(const ScriptHost* host);
+
+    const char* pending_stats_panel_title(
+        const ScriptHost* host,
+        std::size_t index,
+        std::size_t* out_size);
+
+    std::size_t pending_stats_panel_row_count(
+        const ScriptHost* host,
+        std::size_t panel_index);
+
+    const char* pending_stats_panel_row_label(
+        const ScriptHost* host,
+        std::size_t panel_index,
+        std::size_t row_index,
+        std::size_t* out_size);
+
+    const char* pending_stats_panel_row_value(
+        const ScriptHost* host,
+        std::size_t panel_index,
+        std::size_t row_index,
+        std::size_t* out_size);
+
+    // Button panels — wz.tool.buttonPanel(title, [[label, action], ...])
+    // Clicking a button should cause the engine to handle the action string.
+
+    void clear_pending_button_panels(ScriptHost* host);
+
+    std::size_t pending_button_panel_count(const ScriptHost* host);
+
+    const char* pending_button_panel_title(
+        const ScriptHost* host,
+        std::size_t index,
+        std::size_t* out_size);
+
+    std::size_t pending_button_panel_button_count(
+        const ScriptHost* host,
+        std::size_t panel_index);
+
+    const char* pending_button_panel_button_label(
+        const ScriptHost* host,
+        std::size_t panel_index,
+        std::size_t button_index,
+        std::size_t* out_size);
+
+    const char* pending_button_panel_button_action(
+        const ScriptHost* host,
+        std::size_t panel_index,
+        std::size_t button_index,
+        std::size_t* out_size);
 }

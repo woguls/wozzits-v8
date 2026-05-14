@@ -19,9 +19,35 @@ namespace wz::script
         std::string text;
     };
 
+    struct ScriptStatsRow
+    {
+        std::string label;
+        std::string value;
+    };
+
+    struct ScriptStatsPanel
+    {
+        std::string title;
+        std::vector<ScriptStatsRow> rows;
+    };
+
+    struct ScriptButtonItem
+    {
+        std::string label;
+        std::string action;
+    };
+
+    struct ScriptButtonPanel
+    {
+        std::string title;
+        std::vector<ScriptButtonItem> buttons;
+    };
+
     struct ScriptToolState
     {
         std::vector<ScriptTextPanel> pending_text_panels;
+        std::vector<ScriptStatsPanel> pending_stats_panels;
+        std::vector<ScriptButtonPanel> pending_button_panels;
     };
 
     struct ScriptHost
@@ -60,5 +86,11 @@ namespace wz::script::internal
         const v8::FunctionCallbackInfo<v8::Value>& args);
 
     void wz_tool_text_panel_callback(
+        const v8::FunctionCallbackInfo<v8::Value>& args);
+
+    void wz_tool_stats_panel_callback(
+        const v8::FunctionCallbackInfo<v8::Value>& args);
+
+    void wz_tool_button_panel_callback(
         const v8::FunctionCallbackInfo<v8::Value>& args);
 }

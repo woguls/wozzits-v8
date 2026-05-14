@@ -38,12 +38,14 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 find_package(V8 REQUIRED)
 
 add_library(wozzits_v8 STATIC
-    
+
     include/wozzits/script/script_host.h
-    
-    src/v8_script_tool_panels.cpp
+
     src/v8_script_host.cpp
     src/v8_script_log.cpp
+    src/v8_script_tool_panels.cpp
+    src/v8_script_stats_panels.cpp
+    src/v8_script_button_panels.cpp
 )
 
 add_library(wozzits_v8::wozzits_v8 ALIAS wozzits_v8)
@@ -161,6 +163,52 @@ if(WOZZITS_V8_BUILD_TESTS)
     wozzits_apply_v8_libcxx(script_host_run_into)
 
     add_test(NAME script_host_run_into COMMAND script_host_run_into)
+
+    add_executable(script_host_stats_panel
+        tests/script_host/script_host_stats_panel.cpp
+    )
+
+    target_link_libraries(script_host_stats_panel
+        PRIVATE
+            wozzits_v8::wozzits_v8
+    )
+
+    target_compile_features(script_host_stats_panel PRIVATE cxx_std_20)
+
+    if(MSVC)
+        target_compile_options(script_host_stats_panel
+            PRIVATE
+                /std:c++20
+                /Zc:__cplusplus
+        )
+    endif()
+
+    wozzits_apply_v8_libcxx(script_host_stats_panel)
+
+    add_test(NAME script_host_stats_panel COMMAND script_host_stats_panel)
+
+    add_executable(script_host_button_panel
+        tests/script_host/script_host_button_panel.cpp
+    )
+
+    target_link_libraries(script_host_button_panel
+        PRIVATE
+            wozzits_v8::wozzits_v8
+    )
+
+    target_compile_features(script_host_button_panel PRIVATE cxx_std_20)
+
+    if(MSVC)
+        target_compile_options(script_host_button_panel
+            PRIVATE
+                /std:c++20
+                /Zc:__cplusplus
+        )
+    endif()
+
+    wozzits_apply_v8_libcxx(script_host_button_panel)
+
+    add_test(NAME script_host_button_panel COMMAND script_host_button_panel)
 endif()
 
 if(WOZZITS_V8_BUILD_EXAMPLES)
