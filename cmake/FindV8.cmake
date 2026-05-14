@@ -159,10 +159,6 @@ if(WIN32)
         oleaut32
         uuid
 
-        libcmt
-        libvcruntime
-        libucrt
-        libcpmt
     )
 endif()
 

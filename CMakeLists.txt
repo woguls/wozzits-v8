@@ -10,7 +10,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(MSVC)
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    # V8 uses the static CRT (/MT) — its allocator shim overrides malloc/calloc
+    # in the static CRT and cannot be used with the DLL CRT.  Force /MT for all
+    # build types so every object in the link agrees.
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
 endif()
 
 # V8 is always built in Release mode; its objects embed _ITERATOR_DEBUG_LEVEL=0.
