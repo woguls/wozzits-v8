@@ -22,6 +22,9 @@ namespace wz::script
         std::size_t error_size = 0;
     };
 
+    bool init_v8_platform();
+    void shutdown_v8_platform();
+
     ScriptHost* create_v8_script_host();
     void destroy_v8_script_host(ScriptHost* host);
 

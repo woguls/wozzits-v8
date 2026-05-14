@@ -8,7 +8,6 @@
 #include <v8-isolate.h>
 #include <v8-persistent-handle.h>
 
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -29,7 +28,6 @@ namespace wz::script
     {
         bool initialized = false;
 
-        std::unique_ptr<v8::Platform> platform;
         v8::Isolate::CreateParams create_params{};
         v8::Isolate* isolate = nullptr;
         v8::Global<v8::Context> context;

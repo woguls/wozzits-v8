@@ -18,11 +18,14 @@
 #include <cassert>
 #include <cstdio>
 #include <cstring>
+#include <memory>
 
 
 
 
-namespace wz::script::internal 
+static std::unique_ptr<v8::Platform> g_platform;
+
+namespace wz::script::internal
 {
     std::string make_string(const char* text)
     {
@@ -105,6 +108,34 @@ namespace wz::script::internal
 
 namespace wz::script
 {
+    bool init_v8_platform()
+    {
+        if (g_platform)
+            return true;
+
+        v8::V8::InitializeICUDefaultLocation(nullptr);
+        v8::V8::InitializeExternalStartupData(nullptr);
+
+        g_platform = v8::platform::NewDefaultPlatform();
+        if (!g_platform)
+            return false;
+
+        v8::V8::InitializePlatform(g_platform.get());
+        v8::V8::Initialize();
+
+        return true;
+    }
+
+    void shutdown_v8_platform()
+    {
+        if (!g_platform)
+            return;
+
+        v8::V8::Dispose();
+        v8::V8::DisposePlatform();
+        g_platform.reset();
+    }
+
     ScriptHost* create_v8_script_host()
     {
         return new ScriptHost();
@@ -127,16 +158,8 @@ namespace wz::script
         if (host->initialized)
             return true;
 
-        v8::V8::InitializeICUDefaultLocation(nullptr);
-        v8::V8::InitializeExternalStartupData(nullptr);
-
-        host->platform = v8::platform::NewDefaultPlatform();
-
-        if (!host->platform)
+        if (!g_platform)
             return false;
-
-        v8::V8::InitializePlatform(host->platform.get());
-        v8::V8::Initialize();
 
         host->create_params.array_buffer_allocator =
             v8::ArrayBuffer::Allocator::NewDefaultAllocator();
@@ -147,12 +170,6 @@ namespace wz::script
         {
             delete host->create_params.array_buffer_allocator;
             host->create_params.array_buffer_allocator = nullptr;
-
-            v8::V8::Dispose();
-            v8::V8::DisposePlatform();
-
-            host->platform.reset();
-
             return false;
         }
 
@@ -235,11 +252,6 @@ namespace wz::script
 
         delete host->create_params.array_buffer_allocator;
         host->create_params.array_buffer_allocator = nullptr;
-
-        v8::V8::Dispose();
-        v8::V8::DisposePlatform();
-
-        host->platform.reset();
 
         host->last_value.clear();
         host->last_error.clear();
