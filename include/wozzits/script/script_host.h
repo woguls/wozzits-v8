@@ -36,6 +36,31 @@ namespace wz::script
         const char* name,
         const char* source);
 
+    struct RunSourceBuffers
+    {
+        char* value = nullptr;
+        std::size_t value_capacity = 0;
+        std::size_t value_size = 0;
+
+        char* error = nullptr;
+        std::size_t error_capacity = 0;
+        std::size_t error_size = 0;
+
+        bool value_truncated = false;
+        bool error_truncated = false;
+    };
+
+    // Runs source and writes the result into caller-owned buffers.
+    // Returns true on success (value written), false on error (error written).
+    // Returns false immediately if out is null.
+    // If a buffer pointer is null or its capacity is zero the corresponding
+    // _size is set to 0 and _truncated is set to true when data was available.
+    bool run_source_into(
+        ScriptHost* host,
+        const char* name,
+        const char* source,
+        RunSourceBuffers* out);
+
     void clear_logs(ScriptHost* host);
 
     std::size_t log_count(const ScriptHost* host);

@@ -138,6 +138,29 @@ if(WOZZITS_V8_BUILD_TESTS)
     wozzits_apply_v8_libcxx(script_host_platform)
 
     add_test(NAME script_host_platform COMMAND script_host_platform)
+
+    add_executable(script_host_run_into
+        tests/script_host/script_host_run_into.cpp
+    )
+
+    target_link_libraries(script_host_run_into
+        PRIVATE
+            wozzits_v8::wozzits_v8
+    )
+
+    target_compile_features(script_host_run_into PRIVATE cxx_std_20)
+
+    if(MSVC)
+        target_compile_options(script_host_run_into
+            PRIVATE
+                /std:c++20
+                /Zc:__cplusplus
+        )
+    endif()
+
+    wozzits_apply_v8_libcxx(script_host_run_into)
+
+    add_test(NAME script_host_run_into COMMAND script_host_run_into)
 endif()
 
 if(WOZZITS_V8_BUILD_EXAMPLES)

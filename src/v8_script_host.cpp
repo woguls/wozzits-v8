@@ -366,4 +366,56 @@ namespace wz::script
     }
 
 
+    bool run_source_into(
+        ScriptHost* host,
+        const char* name,
+        const char* source,
+        RunSourceBuffers* out)
+    {
+        if (out == nullptr)
+            return false;
+
+        const RunSourceResult result = run_source(host, name, source);
+
+        auto copy_into = [](
+            const char* src, std::size_t src_size,
+            char* dst, std::size_t capacity,
+            std::size_t& out_size, bool& out_truncated)
+        {
+            if (dst == nullptr || capacity == 0)
+            {
+                out_size = 0;
+                out_truncated = (src_size > 0);
+                return;
+            }
+
+            const std::size_t copy_size =
+                src_size < capacity ? src_size : capacity - 1;
+
+            std::memcpy(dst, src, copy_size);
+            dst[copy_size] = '\0';
+            out_size = copy_size;
+            out_truncated = (copy_size < src_size);
+        };
+
+        if (result.ok)
+        {
+            const char* src = result.value ? result.value : "";
+            const std::size_t src_size = result.value ? result.value_size : 0;
+            copy_into(src, src_size,
+                out->value, out->value_capacity,
+                out->value_size, out->value_truncated);
+        }
+        else
+        {
+            const char* src = result.error ? result.error : "";
+            const std::size_t src_size = result.error ? result.error_size : 0;
+            copy_into(src, src_size,
+                out->error, out->error_capacity,
+                out->error_size, out->error_truncated);
+        }
+
+        return result.ok;
+    }
+
 } // namespace wz::script
